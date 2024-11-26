@@ -46,8 +46,14 @@ ENV DEFAULT_NUM_WORKERS=2
 # 暴露gRPC端口
 EXPOSE 50051
 
+RUN cd /app/models && \
+    wget https://huggingface.co/boltz-community/boltz-1/resolve/main/boltz1.ckpt && \
+    cd /app/cache && \
+    wget https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl
+
+    
 # 启动推理服务
-CMD ["python3", "-m", "boltz.services.inference", "--port", "50051", \
+CMD ["python3", "-m", "src.boltz_service.services.inference", "--port", "50051", \
      "--cache", "${CACHE_PATH}", \
      "--model_path", "${MODEL_PATH}", \
      "--output_path", "${OUTPUT_PATH}", \

@@ -53,5 +53,12 @@ ENV DATA_PATH=/app/data \
 # 暴露gRPC端口
 EXPOSE 50052
 
+
+# Download model and CCD files from HuggingFace
+RUN cd /app/models && \
+    wget https://huggingface.co/boltz-community/boltz-1/resolve/main/boltz1.ckpt && \
+    cd /app/cache && \
+    wget https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl
+
 # 启动训练服务
-CMD ["python3", "-m", "boltz_service.services.training", "--port", "50052"]
+CMD ["python3", "-m", "src.boltz_service.services.training", "--port", "50052"]
