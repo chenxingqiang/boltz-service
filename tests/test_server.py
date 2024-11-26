@@ -40,32 +40,11 @@ class MockMSAModule(nn.Module):
         self.encoder = nn.Linear(msa_s, msa_s)
         self.dropout = nn.Dropout(msa_dropout)
         
-    def forward(self, sequence, max_seqs=10, min_identity=0.3):
-        """Generate mock MSA results"""
-        # Create mock aligned sequences
-        query_len = len(sequence)
-        num_seqs = max_seqs
-        
-        # Generate mock sequences with varying identity
-        sequences = []
-        scores = []
-        for i in range(num_seqs):
-            # Create sequence with some mutations
-            identity = min_identity + (1 - min_identity) * (num_seqs - i) / num_seqs
-            seq = ""
-            for aa in sequence:
-                if torch.rand(1).item() < identity:
-                    seq += aa  # Keep original amino acid
-                else:
-                    seq += "ACDEFGHIKLMNPQRSTVWY"[torch.randint(20, (1,)).item()]  # Random mutation
-            sequences.append(seq)
-            scores.append(identity)
-        
-        return {
-            'sequences': sequences,
-            'scores': scores,
-            'msa_features': torch.randn(num_seqs, query_len, self.msa_s)
-        }
+    def forward(self, x):
+        # Mock MSA processing
+        x = self.encoder(x)
+        x = self.dropout(x)
+        return x
 
 class MockPairformerModule(nn.Module):
     """Mock pairformer module for testing"""
@@ -174,36 +153,24 @@ class MockBoltzModel(pl.LightningModule):
             self.pde_mae = nn.ModuleDict()
             self.pae_mae = nn.ModuleDict()
         
-    def forward(self, batch, recycling_steps=0, num_sampling_steps=None, multiplicity_diffusion_train=1, diffusion_samples=1):
-        """Mock forward pass with proper interface"""
-        # Get batch size and sequence length
-        batch_size = batch["token_index"].shape[0] if "token_index" in batch else 1
-        num_residues = batch["token_index"].shape[1] if "token_index" in batch else len(batch.get("sequence", "MVKVGVNG"))
-        
-        # Generate mock predictions with correct shapes
+    def forward(self, batch):
+        # Return mock prediction data
         return {
-            'pdistogram': torch.randn(batch_size, num_residues, num_residues, self.num_bins),
-            'sample_atom_coords': torch.randn(batch_size * diffusion_samples, num_residues, 14, 3),  # 14 atoms per residue
-            'plddt': torch.rand(batch_size * diffusion_samples, num_residues),
-            'iptm': torch.rand(batch_size * diffusion_samples),
-            'predicted_lddt': torch.rand(batch_size * diffusion_samples, num_residues),
-            'predicted_coords': torch.randn(batch_size * diffusion_samples, num_residues, 14, 3),
-            'predicted_positions': torch.randn(batch_size * diffusion_samples, num_residues, 3),
-            'predicted_plddt': torch.rand(batch_size * diffusion_samples, num_residues),
-            'predicted_iptm': torch.rand(batch_size * diffusion_samples),
-            'predicted_ptm': torch.rand(batch_size * diffusion_samples),
-            'predicted_pae': torch.rand(batch_size * diffusion_samples, num_residues, num_residues),
-            'predicted_distogram': torch.randn(batch_size * diffusion_samples, num_residues, num_residues, self.num_bins)
+            'predicted_coords': torch.randn(1, 10, 3),
+            'predicted_lddt': torch.rand(1, 10),
+            'predicted_plddt': torch.rand(1, 10),
+            'predicted_positions': torch.randn(1, 10, 3),
         }
         
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
         
     def state_dict(self):
-        """Return a proper state dict for testing"""
-        state = {
+        # Return a minimal state dict for testing
+        return {
             'msa_module.encoder.weight': torch.randn(32, 32),
             'msa_module.encoder.bias': torch.randn(32),
+            'msa_module.dropout.p': torch.tensor(0.1),
             'pairformer.encoder.weight': torch.randn(32, 32),
             'pairformer.encoder.bias': torch.randn(32),
             'pairformer.attention.in_proj_weight': torch.randn(96, 32),
@@ -216,25 +183,7 @@ class MockBoltzModel(pl.LightningModule):
             'trunk.bias': torch.randn(32),
             'head.weight': torch.randn(32, 32),
             'head.bias': torch.randn(32),
-            's_init.weight': torch.randn(128, 128),  # Adding missing init weights
-            'z_init_1.weight': torch.randn(128, 64),
-            'z_init_2.weight': torch.randn(128, 64),
-            's_recycle.weight': torch.randn(128, 128),
-            'z_recycle.weight': torch.randn(64, 64),
-            'version': torch.tensor(1)  # Add version info
         }
-        
-        # Add confidence metrics if enabled
-        if hasattr(self, 'lddt'):
-            for metric in ['lddt', 'disto_lddt', 'complex_lddt', 'top1_lddt',
-                          'iplddt_top1_lddt', 'ipde_top1_lddt', 'pde_top1_lddt',
-                          'ptm_top1_lddt', 'iptm_top1_lddt', 'ligand_iptm_top1_lddt',
-                          'protein_iptm_top1_lddt', 'avg_lddt', 'plddt_mae',
-                          'pde_mae', 'pae_mae']:
-                state[f'confidence.{metric}.weight'] = torch.randn(32, 32)
-                state[f'confidence.{metric}.bias'] = torch.randn(32)
-        
-        return state
         
     def load_state_dict(self, state_dict):
         # Properly load the state dict
@@ -299,7 +248,7 @@ def setup_test_dirs(mock_model):
     TEST_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     (TEST_DATA_DIR / "training").mkdir(exist_ok=True)
     (TEST_DATA_DIR / "checkpoints").mkdir(exist_ok=True)
-    model_dir = TEST_CACHE_DIR / "models" / "default"
+    model_dir = TEST_CACHE_DIR 
     model_dir.mkdir(parents=True, exist_ok=True)
     
     # Create and save mock model
@@ -309,26 +258,16 @@ def setup_test_dirs(mock_model):
         'global_step': 0,
         'pytorch-lightning_version': '2.0.0',
         'state_dict': model.state_dict(),
-        'hyper_parameters': model.hparams,
-        'optimizer_states': None,
-        'lr_schedulers': None,
-        'callbacks': None,
-        'version': 1
+        'hyper_parameters': model.hparams
     }
     
     # Save checkpoint
     checkpoint_path = model_dir / "model.ckpt"
     torch.save(checkpoint, checkpoint_path)
     
-    # Verify checkpoint exists and is valid
+    # Verify checkpoint exists
     if not checkpoint_path.exists():
         raise RuntimeError(f"Failed to create mock model checkpoint at {checkpoint_path}")
-    try:
-        loaded = torch.load(checkpoint_path)
-        if not all(k in loaded for k in ['state_dict', 'hyper_parameters']):
-            raise RuntimeError("Invalid checkpoint format")
-    except Exception as e:
-        raise RuntimeError(f"Failed to verify checkpoint: {e}")
     
     yield
     

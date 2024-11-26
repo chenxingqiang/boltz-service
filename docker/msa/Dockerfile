@@ -57,6 +57,9 @@ COPY src/ /app/src/
 COPY scripts/ /app/scripts/
 WORKDIR /app
 
+# Add the app directory to PYTHONPATH
+ENV PYTHONPATH=/app:${PYTHONPATH}
+
 # Create non-root user
 RUN useradd -m -u 1000 boltz && \
     chown -R boltz:boltz /data /app
@@ -70,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 50053
 
 # Start MSA service
-CMD ["python", "-m", "src.boltz.services.msa"]
+CMD ["python", "-m", "src.boltz_service.services.msa", "--port", "50053"]
