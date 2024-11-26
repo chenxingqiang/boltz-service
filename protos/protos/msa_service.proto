@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package boltz;
+
+import "common.proto";
+
+// MSA generation service
+service MSAService {
+  // Generate MSA for a sequence
+  rpc GenerateMSA (MSARequest) returns (MSAResponse) {}
+  
+  // Get MSA job status
+  rpc GetJobStatus (JobStatusRequest) returns (JobStatusResponse) {}
+  
+  // Cancel MSA job
+  rpc CancelJob (CancelJobRequest) returns (CancelJobResponse) {}
+}
+
+// Request for MSA generation
+message MSARequest {
+  string job_id = 1;
+  string sequence = 2;
+  int32 max_seqs = 3;
+  float min_identity = 4;
+  int32 num_iterations = 5;
+}
+
+// Response for MSA generation
+message MSAResponse {
+  string job_id = 1;
+  string status = 2;
+  string result_path = 3;
+  string error_message = 4;
+}

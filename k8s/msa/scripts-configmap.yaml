@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: download-scripts
+  namespace: boltz
+data:
+  download_bfd.sh: |
+    #!/bin/bash
+    set -e
+
+    if [[ $# -eq 0 ]]; then
+      echo "Error: download directory must be provided as an input argument."
+      exit 1
+    fi
+
+    DOWNLOAD_DIR="$1"
+    ROOT_DIR="${DOWNLOAD_DIR}/bfd"
+    SOURCE_URL="https://bfd.mmseqs.com/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt.tar.gz"
+    BASENAME=$(basename "${SOURCE_URL}")
+
+    mkdir -p "${ROOT_DIR}"
+
+    echo "Downloading BFD database to ${ROOT_DIR}..."
+    echo "This may take a while as the database is several hundred GB in size."
+
+    aria2c "${SOURCE_URL}" --dir="${ROOT_DIR}"
+
+    echo "Extracting database files..."
+    tar -xvf "${ROOT_DIR}/${BASENAME}" -C "${ROOT_DIR}"
+
+    echo "Cleaning up..."
+    rm "${ROOT_DIR}/${BASENAME}"
+
+    echo "Done! BFD database has been downloaded to ${ROOT_DIR}"

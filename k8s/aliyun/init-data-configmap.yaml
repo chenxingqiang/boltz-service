@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-data-script
+data:
+  init-data.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create data directories
+    mkdir -p /data/bfd
+    mkdir -p /data/models
+    mkdir -p /data/cache
+    mkdir -p /data/uniref
+
+    # Download BFD database if not exists
+    if [ ! -f /data/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt ]; then
+      echo "Downloading BFD database..."
+      wget -P /data/bfd https://bfd.mmseqs.com/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt.tar.gz
+      tar -xzf /data/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt.tar.gz -C /data/bfd/
+      rm /data/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt.tar.gz
+    else
+      echo "BFD database already exists, skipping download."
+    fi
+
+    # Download Boltz model files if not exists
+    if [ ! -f /data/models/ccd.pkl ] || [ ! -f /data/models/boltz1.ckpt ]; then
+      echo "Downloading Boltz model files..."
+      wget -P /data/models https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl
+      wget -P /data/models https://huggingface.co/boltz-community/boltz-1/resolve/main/boltz1.ckpt
+    else
+      echo "Boltz model files already exist, skipping download."
+    fi
+
+    # Download UniRef90 database if not exists
+    if [ ! -f /data/uniref/uniref90.fasta ]; then
+      echo "Downloading UniRef90 database..."
+      wget -P /data/uniref https://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref90/uniref90.fasta.gz
+      gunzip /data/uniref/uniref90.fasta.gz
+    else
+      echo "UniRef90 database already exists, skipping download."
+    fi
+
+    # Set permissions
+    chmod -R 755 /data
+    chmod 777 /data/cache
+
+    echo "Data initialization completed!"

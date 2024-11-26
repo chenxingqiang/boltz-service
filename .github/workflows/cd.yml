@@ -1,0 +1,48 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Configure Aliyun Credentials
+      uses: alibaba/setup-alibabacloud@v1
+      with:
+        access-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+        access-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        region: cn-hangzhou
+        
+    - name: Install aliyun-cli
+      run: |
+        curl -o aliyun-cli-linux-latest-amd64.tgz https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+        tar xzvf aliyun-cli-linux-latest-amd64.tgz
+        sudo mv aliyun /usr/local/bin/
+        
+    - name: Configure kubectl
+      run: |
+        aliyun cs GET /k8s/${{ secrets.ALIYUN_CLUSTER_ID }}/user_config | jq -r .config > ~/.kube/config
+        
+    - name: Deploy inference service
+      run: |
+        kubectl apply -f k8s/inference-deployment.yaml
+        kubectl rollout restart deployment boltz-inference
+        
+    - name: Deploy training service
+      run: |
+        kubectl apply -f k8s/training-deployment.yaml
+        kubectl rollout restart deployment boltz-training
+        
+    - name: Verify deployment
+      run: |
+        kubectl get pods -l app=boltz-inference
+        kubectl get pods -l app=boltz-training

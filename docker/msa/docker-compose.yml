@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  msa:
+    build:
+      context: ../..
+      dockerfile: docker/msa/Dockerfile
+    ports:
+      - "50053:50053"
+    volumes:
+      - bfd_data:/data/bfd
+      - cache_data:/data/cache
+    environment:
+      - BOLTZ_BFD_PATH=/data/bfd
+      - BOLTZ_CACHE_DIR=/data/cache
+      - SKIP_BFD_CHECK=true  # Skip BFD database check for local testing
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50053"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+
+volumes:
+  bfd_data:
+    driver: local
+  cache_data:
+    driver: local

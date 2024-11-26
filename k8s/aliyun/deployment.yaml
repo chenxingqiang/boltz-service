@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boltz-service
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: boltz-service
+  template:
+    metadata:
+      labels:
+        app: boltz-service
+    spec:
+      containers:
+      - name: boltz-service
+        image: ${ALIYUN_REGISTRY}/${ALIYUN_NAMESPACE}/boltz-service:latest
+        ports:
+        - containerPort: 50051
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "4"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "32Gi"
+            cpu: "8"
+            nvidia.com/gpu: "1"
+        env:
+        - name: ALIYUN_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: aliyun-config
+              key: ALIYUN_REGION
+        - name: ALIYUN_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aliyun-credentials
+              key: ALIYUN_ACCESS_KEY_ID
+        - name: ALIYUN_ACCESS_KEY_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aliyun-credentials
+              key: ALIYUN_ACCESS_KEY_SECRET
+        envFrom:
+        - configMapRef:
+            name: boltz-config
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: cache-volume
+          mountPath: /data/cache
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: boltz-data-pvc
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: boltz-cache-pvc
+      nodeSelector:
+        nvidia.com/gpu: "present"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boltz-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+  selector:
+    app: boltz-service

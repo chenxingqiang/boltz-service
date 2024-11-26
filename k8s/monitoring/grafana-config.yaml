@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: http://prometheus:9090
+      isDefault: true
+    - name: Jaeger
+      type: jaeger
+      access: proxy
+      url: http://jaeger:16686
+      isDefault: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+    - name: 'default'
+      orgId: 1
+      folder: ''
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /etc/grafana/provisioning/dashboards
+  system-metrics.json: |
+    {
+      "title": "System Metrics",
+      "panels": [
+        {
+          "title": "CPU Usage",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"boltz\"}[5m])",
+              "legendFormat": "{{instance}}"
+            }
+          ]
+        },
+        {
+          "title": "Memory Usage",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes{job=\"boltz\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ]
+        }
+      ]
+    }
+  request-metrics.json: |
+    {
+      "title": "Request Metrics",
+      "panels": [
+        {
+          "title": "Request Rate",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(http_requests_total{job=\"boltz\"}[5m])",
+              "legendFormat": "{{method}} {{path}}"
+            }
+          ]
+        },
+        {
+          "title": "Request Duration",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(http_request_duration_seconds_sum{job=\"boltz\"}[5m]) / rate(http_request_duration_seconds_count{job=\"boltz\"}[5m])",
+              "legendFormat": "{{method}} {{path}}"
+            }
+          ]
+        }
+      ]
+    }

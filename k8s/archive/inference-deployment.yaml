@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boltz-inference
+  labels:
+    app: boltz-inference
+spec:
+  replicas: 2  # 可以根据需求水平扩展
+  selector:
+    matchLabels:
+      app: boltz-inference
+  template:
+    metadata:
+      labels:
+        app: boltz-inference
+    spec:
+      containers:
+      - name: inference-server
+        image: boltz-inference:latest
+        ports:
+        - containerPort: 50051
+        resources:
+          limits:
+            nvidia.com/gpu: 1  # 每个推理实例使用1个GPU
+          requests:
+            nvidia.com/gpu: 1
+            memory: "8Gi"
+            cpu: "4"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+          readOnly: true  # 推理服务只需要读取模型
+        - name: cache-storage
+          mountPath: /app/cache
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: CACHE_PATH
+          value: "/app/cache"
+        - name: MAX_BATCH_SIZE
+          value: "4"
+        - name: NUM_WORKERS
+          value: "2"
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: cache-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boltz-inference-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+  selector:
+    app: boltz-inference

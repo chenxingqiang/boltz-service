@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: msa-service
+  namespace: boltz
+  labels:
+    app: msa
+spec:
+  ports:
+    - port: 50053
+      targetPort: 50053
+      protocol: TCP
+      name: grpc
+  selector:
+    app: msa
+  type: ClusterIP

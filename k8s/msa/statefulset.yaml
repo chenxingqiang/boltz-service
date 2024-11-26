@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: msa
+  namespace: boltz
+spec:
+  serviceName: msa-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: msa
+  template:
+    metadata:
+      labels:
+        app: msa
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: msa
+        image: boltz-msa:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 50053
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: msa-config
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2"
+          limits:
+            memory: "16Gi"
+            cpu: "4"
+        volumeMounts:
+        - name: bfd-data
+          mountPath: /data/bfd
+        - name: cache-data
+          mountPath: /data/cache
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50053"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50053"]
+          initialDelaySeconds: 10
+          periodSeconds: 30
+      volumes:
+      - name: bfd-data
+        persistentVolumeClaim:
+          claimName: bfd-data
+      - name: cache-data
+        persistentVolumeClaim:
+          claimName: cache-data

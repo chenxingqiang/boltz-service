@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: boltz-config
+data:
+  BOLTZ_MAX_MSA_SEQS: "4096"
+  BOLTZ_RECYCLING_STEPS: "3"
+  BOLTZ_SAMPLING_STEPS: "200"
+  BOLTZ_DIFFUSION_SAMPLES: "1"
+  BOLTZ_OUTPUT_FORMAT: "mmcif"
+  BOLTZ_NUM_WORKERS: "2"
+  BOLTZ_DEVICES: "1"
+  BOLTZ_ACCELERATOR: "gpu"
+  BOLTZ_CACHE_DIR: "/data/cache"
+  BOLTZ_MODEL_DIR: "/data/models"
+  BOLTZ_BFD_PATH: "/data/bfd"
+  BOLTZ_UNIREF_PATH: "/data/uniref"

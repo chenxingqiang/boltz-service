@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aliyun-config
+data:
+  ALIYUN_REGION: "${ALIYUN_REGION}"
+  ALIYUN_NAMESPACE: "${ALIYUN_NAMESPACE}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aliyun-credentials
+type: Opaque
+stringData:
+  ALIYUN_ACCESS_KEY_ID: "${ALIYUN_ACCESS_KEY_ID}"
+  ALIYUN_ACCESS_KEY_SECRET: "${ALIYUN_ACCESS_KEY_SECRET}"

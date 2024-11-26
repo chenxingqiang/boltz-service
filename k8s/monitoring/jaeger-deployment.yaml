@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:1.45
+        ports:
+        - containerPort: 6831
+          protocol: UDP
+          name: jaeger-thrift
+        - containerPort: 16686
+          protocol: TCP
+          name: http
+        env:
+        - name: COLLECTOR_ZIPKIN_HOST_PORT
+          value: ":9411"
+        - name: MEMORY_MAX_TRACES
+          value: "50000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: monitoring
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - port: 6831
+    protocol: UDP
+    targetPort: jaeger-thrift
+    name: jaeger-thrift
+  - port: 16686
+    protocol: TCP
+    targetPort: http
+    name: http
+  type: ClusterIP

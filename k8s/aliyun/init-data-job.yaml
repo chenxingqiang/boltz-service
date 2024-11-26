@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: boltz-data-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: data-init
+        image: ${ALIYUN_REGISTRY}/${ALIYUN_NAMESPACE}/boltz-service:latest
+        command: ["/bin/bash", "/scripts/init-data.sh"]
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "4"
+          limits:
+            memory: "16Gi"
+            cpu: "8"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: init-script
+          mountPath: /scripts
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: boltz-data-pvc
+      - name: init-script
+        configMap:
+          name: init-data-script
+          defaultMode: 0755
+      restartPolicy: Never
+  backoffLimit: 4

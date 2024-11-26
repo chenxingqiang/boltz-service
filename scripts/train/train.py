@@ -16,7 +16,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.utilities import rank_zero_only
 
-from boltz.data.module.training import BoltzTrainingDataModule, DataConfig
+from boltz_service.data.module.training import BoltzTrainingDataModule, DataConfig
 
 
 @dataclass

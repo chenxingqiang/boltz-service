@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boltz-training
+  labels:
+    app: boltz-training
+spec:
+  replicas: 1  # 训练服务通常只需要一个实例
+  selector:
+    matchLabels:
+      app: boltz-training
+  template:
+    metadata:
+      labels:
+        app: boltz-training
+    spec:
+      containers:
+      - name: training-server
+        image: boltz-training:latest
+        ports:
+        - containerPort: 50052  # 使用不同的端口
+        resources:
+          limits:
+            nvidia.com/gpu: 4  # 训练服务使用多个GPU
+          requests:
+            nvidia.com/gpu: 4
+            memory: "32Gi"
+            cpu: "8"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: training-data
+          mountPath: /app/data
+        - name: checkpoints
+          mountPath: /app/checkpoints
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: DATA_PATH
+          value: "/app/data"
+        - name: CHECKPOINT_PATH
+          value: "/app/checkpoints"
+        - name: NUM_GPUS
+          value: "4"
+        - name: WANDB_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: wandb-secret
+              key: api-key
+        livenessProbe:
+          grpc:
+            port: 50052
+          initialDelaySeconds: 60
+          periodSeconds: 20
+        readinessProbe:
+          grpc:
+            port: 50052
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: training-data
+        persistentVolumeClaim:
+          claimName: training-data-pvc
+      - name: checkpoints
+        persistentVolumeClaim:
+          claimName: checkpoints-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boltz-training-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50052
+    targetPort: 50052
+    protocol: TCP
+  selector:
+    app: boltz-training
+---
+# 训练数据存储
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: training-data-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: standard
+---
+# 检查点存储
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: checkpoints-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi
+  storageClassName: standard

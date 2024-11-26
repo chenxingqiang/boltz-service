@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: protein-predictor
+  labels:
+    app: protein-predictor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: protein-predictor
+  template:
+    metadata:
+      labels:
+        app: protein-predictor
+    spec:
+      containers:
+      - name: protein-predictor
+        image: protein-predictor:latest
+        ports:
+        - containerPort: 50051
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: protein-predictor-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+  selector:
+    app: protein-predictor
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

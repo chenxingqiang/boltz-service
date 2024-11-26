@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boltz-service
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: boltz-service
+  template:
+    metadata:
+      labels:
+        app: boltz-service
+    spec:
+      containers:
+      - name: boltz-service
+        image: ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/boltz-service:latest
+        ports:
+        - containerPort: 50051
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        env:
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: aws-config
+              key: AWS_REGION
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: AWS_SECRET_ACCESS_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boltz-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+  selector:
+    app: boltz-service

@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bfd-download
+  namespace: boltz
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: bfd-downloader
+        image: python:3.11-slim
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          apt-get update && \
+          apt-get install -y aria2 && \
+          /scripts/download_bfd.sh /data
+        volumeMounts:
+        - name: bfd-data
+          mountPath: /data/bfd
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: bfd-data
+        persistentVolumeClaim:
+          claimName: bfd-data
+      - name: scripts
+        configMap:
+          name: download-scripts
+          defaultMode: 0755
+      restartPolicy: Never
+  backoffLimit: 3
