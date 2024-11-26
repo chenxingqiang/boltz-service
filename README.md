@@ -283,9 +283,9 @@ If you use this software in your research, please cite:
 
 ```bibtex
 @software{boltz2023,
-  author = {Boltz Labs},
+  author = {Chen, Xingqiang},
   title = {Boltz Service: High-Performance Protein Structure Prediction},
-  year = {2023},
+  year = {2024},
   publisher = {GitHub},
   url = {https://github.com/chenxingqiang/boltz-service}
 }
