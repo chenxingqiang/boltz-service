@@ -64,7 +64,8 @@ Our model and code are released under MIT License, and can be freely used for bo
 ## Links
 
 - [GitHub Repository](https://github.com/chenxingqiang/boltz-service)
-- [Documentation](https://bolzt-service.repo.wiki)
+- [API Documentation](docs/API.md)
+- [Contributing Guide](CONTRIBUTING.md)
 - [Issue Tracker](https://github.com/chenxingqiang/boltz-service/issues)
 
 ## Architecture
@@ -265,16 +266,43 @@ service BoltzService {
 }
 ```
 
-For detailed API documentation, see [API.md](docs/API.md).
+For detailed API documentation, see [API Reference](docs/API.md).
+
+### Quick API Example
+
+```python
+import grpc
+from boltz_service.protos import inference_service_pb2, inference_service_pb2_grpc
+
+channel = grpc.insecure_channel('localhost:50051')
+stub = inference_service_pb2_grpc.InferenceServiceStub(channel)
+
+request = inference_service_pb2.PredictionRequest(
+    job_id="prediction-001",
+    sequence="MVKVGVNG",
+    recycling_steps=3,
+    sampling_steps=200,
+    output_format="mmcif"
+)
+
+response = stub.PredictStructure(request)
+print(f"Status: {response.status}")
+```
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
 
+- Development setup
+- Coding standards
+- Testing guidelines
+- Pull request process
+
+Quick start:
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Create a Pull Request
 
 ## Citation
