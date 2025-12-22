@@ -1,109 +1,20 @@
+"""Boltz gRPC server implementation.
+
+This module provides a simplified server interface that wraps the main BoltzServer.
+For the full implementation, see boltz_service.main.
 """
-Boltz gRPC server implementation
-"""
-import os
-import grpc
-from concurrent import futures
+
 import logging
 from pathlib import Path
 from typing import Optional
 
-from grpc_health.v1 import health_pb2_grpc, health
-from grpc_reflection.v1alpha import reflection
-
-from boltz_service.services.msa import MSAService
-from boltz_service.services.inference import InferenceService
-from boltz_service.services.training import TrainingService
 from boltz_service.data.types import ServiceConfig
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-class BoltzServer:
-    def __init__(
-        self,
-        host: str = "0.0.0.0",
-        port: int = 50051,
-        max_workers: int = 10,
-        config: Optional[ServiceConfig] = None
-    ):
-        """Initialize Boltz gRPC server
-
-        Parameters
-        ----------
-        host : str, optional
-            Host to bind to, by default "0.0.0.0"
-        port : int, optional
-            Port to listen on, by default 50051
-        max_workers : int, optional
-            Number of worker threads, by default 10
-        config : Optional[ServiceConfig], optional
-            Service configuration, by default None
-        """
-        self.host = host
-        self.port = port
-        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
-        
-        # Initialize services
-        self.msa_service = MSAService(config)
-        self.inference_service = InferenceService(config)
-        self.training_service = TrainingService(config)
-        
-        # Add services to server
-        from boltz_service.protos import inference_service_pb2_grpc, inference_service_pb2
-        from boltz_service.protos import msa_service_pb2_grpc, msa_service_pb2
-        from boltz_service.protos import training_service_pb2_grpc, training_service_pb2
-        
-        inference_service_pb2_grpc.add_InferenceServiceServicer_to_server(
-            self.inference_service, self.server
-        )
-        msa_service_pb2_grpc.add_MSAServiceServicer_to_server(
-            self.msa_service, self.server
-        )
-        training_service_pb2_grpc.add_TrainingServiceServicer_to_server(
-            self.training_service, self.server
-        )
-
-        # Add health checking service
-        health_servicer = health.HealthServicer()
-        health_pb2_grpc.add_HealthServicer_to_server(health_servicer, self.server)
-
-        # Register services for reflection
-        service_names = (
-            inference_service_pb2.DESCRIPTOR.services_by_name['InferenceService'].full_name,
-            msa_service_pb2.DESCRIPTOR.services_by_name['MSAService'].full_name,
-            training_service_pb2.DESCRIPTOR.services_by_name['TrainingService'].full_name,
-            reflection.SERVICE_NAME,
-            health.SERVICE_NAME,
-        )
-        reflection.enable_server_reflection(service_names, self.server)
-
-        # Set initial health status
-        health_servicer.set('', health_pb2_grpc.HealthCheckResponse.SERVING)
-        for service in service_names:
-            health_servicer.set(service, health_pb2_grpc.HealthCheckResponse.SERVING)
-
-    def start(self):
-        """Start the gRPC server"""
-        server_address = f"{self.host}:{self.port}"
-        self.server.add_insecure_port(server_address)
-        self.server.start()
-        logger.info(f"Server started on {server_address}")
-        
-        try:
-            self.server.wait_for_termination()
-        except KeyboardInterrupt:
-            logger.info("Shutting down server...")
-            self.stop()
-            
-    def stop(self):
-        """Stop the gRPC server"""
-        self.server.stop(0)
-        logger.info("Server stopped")
 
 
 def serve_grpc(
@@ -119,6 +30,9 @@ def serve_grpc(
 ) -> None:
     """Start the Boltz gRPC server.
 
+    This is a convenience function that creates a ServiceConfig and starts
+    the BoltzServer with the specified parameters.
+
     Parameters
     ----------
     host : str, optional
@@ -126,7 +40,7 @@ def serve_grpc(
     port : int, optional
         Port to listen on, by default 50051
     num_workers : int, optional
-        Number of worker processes, by default 10
+        Number of worker threads, by default 10
     cache_dir : Optional[Path], optional
         Cache directory, by default None
     data_path : Optional[Path], optional
@@ -140,29 +54,95 @@ def serve_grpc(
     accelerator : str, optional
         Accelerator type (gpu or cpu), by default "gpu"
     """
-    # Create service configuration
-    config = ServiceConfig(
-        cache_dir=cache_dir,
-        data_path=data_path,
-        checkpoint_path=checkpoint_path,
-        model_path=model_path,
-        devices=devices,
-        accelerator=accelerator,
-        num_workers=num_workers,
-    )
+    # Import here to avoid circular imports
+    from boltz_service.main import BoltzServer
+    from boltz_service.config.base import BaseConfig
+
+    # Create base configuration
+    config = BaseConfig()
+    config.network.host = host
+    config.network.port = port
+    config.network.max_workers = num_workers
+    config.accelerator.type = accelerator
+    config.accelerator.device_ids = list(range(devices))
+
+    if cache_dir:
+        config.cache.cache_dir = cache_dir
+
+    # Validate configuration
+    errors = config.validate()
+    if errors:
+        for error in errors:
+            logger.error(f"Configuration error: {error}")
+        raise ValueError("Configuration validation failed")
 
     # Create and start server
-    server = BoltzServer(
-        host=host,
-        port=port,
-        max_workers=num_workers,
-        config=config,
-    )
+    server = BoltzServer(config)
 
     try:
         server.start()
+        server.wait_for_termination()
     except KeyboardInterrupt:
+        logger.info("Received interrupt, shutting down...")
         server.stop()
+
+
+# Backwards compatibility alias
+class BoltzServer:
+    """Backwards compatibility wrapper for BoltzServer.
+
+    This class provides backwards compatibility for code that imports
+    BoltzServer from this module. For new code, use boltz_service.main.BoltzServer.
+    """
+
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = 50051,
+        max_workers: int = 10,
+        config: Optional[ServiceConfig] = None,
+    ):
+        """Initialize Boltz gRPC server.
+
+        Parameters
+        ----------
+        host : str, optional
+            Host to bind to, by default "0.0.0.0"
+        port : int, optional
+            Port to listen on, by default 50051
+        max_workers : int, optional
+            Number of worker threads, by default 10
+        config : Optional[ServiceConfig], optional
+            Service configuration, by default None
+        """
+        from boltz_service.config.base import BaseConfig
+        from boltz_service.main import BoltzServer as MainBoltzServer
+
+        # Create base configuration
+        base_config = BaseConfig()
+        base_config.network.host = host
+        base_config.network.port = port
+        base_config.network.max_workers = max_workers
+
+        if config:
+            if config.cache_dir:
+                base_config.cache.cache_dir = config.cache_dir
+            base_config.accelerator.type = config.accelerator
+            base_config.accelerator.device_ids = list(range(config.devices))
+
+        self._server = MainBoltzServer(base_config)
+        self.host = host
+        self.port = port
+
+    def start(self):
+        """Start the gRPC server."""
+        self._server.start()
+        self._server.wait_for_termination()
+
+    def stop(self):
+        """Stop the gRPC server."""
+        self._server.stop()
+
 
 if __name__ == "__main__":
     serve_grpc()

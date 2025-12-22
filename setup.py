@@ -26,30 +26,47 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
+        # Deep learning
         "torch>=2.2",
-        "numpy==1.26.3",
-        "hydra-core==1.3.2",
         "pytorch-lightning==2.4.0",
-        "rdkit>=2024.3.2",
-        "dm-tree==0.1.8",
-        "requests==2.32.3",
+        
+        # gRPC and networking
+        "grpcio>=1.54.2",
+        "grpcio-tools>=1.54.2",
+        "grpcio-health-checking>=1.54.2",
+        "grpcio-reflection>=1.54.2",
+        "protobuf>=4.23.2",
+        
+        # Scientific computing
+        "numpy==1.26.3",
+        "scipy==1.13.1",
         "pandas==2.2.3",
-        "types-requests",
+        
+        # Bio-informatics
+        "biopython==1.84",
+        "rdkit>=2024.3.2",
+        
+        # ML utilities
+        "hydra-core==1.3.2",
+        "dm-tree==0.1.8",
         "einops==0.8.0",
         "einx==0.3.0",
         "fairscale==0.4.13",
         "mashumaro==3.14",
         "modelcif==1.2",
         "wandb==0.18.7",
+        
+        # Utilities
         "click==8.1.7",
         "pyyaml==6.0.2",
-        "biopython==1.84",
-        "scipy==1.13.1",
-        "grpcio>=1.50.0",
-        "grpcio-tools>=1.50.0",
-        "grpcio-health-checking>=1.50.0",
-        "grpcio-reflection>=1.50.0",
-        "protobuf>=3.19.0",
+        "requests==2.32.3",
+        "types-requests",
+        "psutil>=5.9.0",
+        "redis>=5.0.0",
+        
+        # Cloud and deployment
+        "boto3>=1.26.0",
+        "kubernetes>=26.1.0",
     ],
     extras_require={
         "dev": [
