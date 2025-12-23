@@ -69,6 +69,7 @@ RUN pip install --no-cache-dir \
     protobuf>=4.23.2
 
 # Copy source code and install package
+COPY README.md ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir -e .
 
