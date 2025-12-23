@@ -17,15 +17,18 @@ services:
 
   # Inference service for protein structure prediction
   inference:
+    image: xingqiangchen/boltz-service:latest-slim
     build:
       context: .
-      dockerfile: docker/inference.Dockerfile
+      dockerfile: docker/inference-slim.Dockerfile
     ports:
       - "50051:50051"
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       - BOLTZ_CACHE_DIR=/data/cache
-      - BOLTZ_MODEL_DIR=/data/models
+      - BOLTZ_MODEL_PATH=/data/models/boltz1.ckpt
+      - BOLTZ_CCD_PATH=/data/models/ccd.pkl
+      - HF_ENDPOINT=https://hf-mirror.com
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CUDA_VISIBLE_DEVICES=0

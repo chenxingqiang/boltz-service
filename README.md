@@ -121,47 +121,45 @@ python -m boltz.service.main
 
 ### Docker Deployment
 
-The service is composed of multiple microservices that can be built and run using Docker:
+#### Pre-built Image (Recommended)
 
-#### Training Service
+Pull the pre-built image from Docker Hub:
+
 ```bash
-# Build the training service
-docker build -f docker/training.Dockerfile -t boltz-training:latest .
+# Full image with embedded model weights (~8GB)
+docker pull xingqiangchen/boltz-service:latest
 
-# Run the training service
-docker run -p 50052:50052 \
-  -v /path/to/data:/app/data \
-  -v /path/to/checkpoints:/app/checkpoints \
-  -v /path/to/models:/app/models \
-  --gpus all \
-  boltz-training:latest
+# Slim image without model weights (~2GB, downloads on first run)
+docker pull xingqiangchen/boltz-service:latest-slim
 ```
 
-#### MSA Service
-```bash
-# Build the MSA service
-docker build -f docker/msa/Dockerfile -t boltz-msa:latest .
+Run the inference service:
 
-# Run the MSA service
-docker run -p 50053:50053 \
-  -v /path/to/bfd:/data/bfd \
-  -v /path/to/cache:/data/cache \
-  boltz-msa:latest
+```bash
+# Full image - model included
+docker run -d --gpus all \
+  -p 50051:50051 \
+  --name boltz-service \
+  xingqiangchen/boltz-service:latest
+
+# Slim image - mount external model directory
+docker run -d --gpus all \
+  -p 50051:50051 \
+  -v /path/to/models:/data/models \
+  --name boltz-service \
+  xingqiangchen/boltz-service:latest-slim
 ```
 
-#### Inference Service
+For detailed Docker documentation, see [Docker Guide](docs/docker.md).
+
+#### Build from Source
+
 ```bash
-# Build the inference service (for ARM64)
-docker build -f docker/inference.arm64.Dockerfile -t boltz-inference:latest .
-# Or for x86_64
+# Build inference service
 docker build -f docker/inference.Dockerfile -t boltz-inference:latest .
 
-# Run the inference service
-docker run -p 50051:50051 \
-  -v /path/to/models:/app/models \
-  --gpus all \
-  boltz-inference:latest
-```
+# Build slim version
+docker build -f docker/inference-slim.Dockerfile -t boltz-inference:slim .
 
 #### Docker Compose
 For local development and testing, you can use Docker Compose to run all services:
