@@ -10,8 +10,8 @@ description = "Boltz-1"
 readme = "README.md"
 dependencies = [
     # Deep learning
-    "torch>=2.2",
-    "pytorch-lightning==2.4.0",
+    "torch>=2.1.0",
+    "pytorch-lightning>=2.1.0",
     
     # gRPC and networking
     "grpcio>=1.54.2",

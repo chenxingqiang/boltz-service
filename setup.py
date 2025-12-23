@@ -27,8 +27,8 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         # Deep learning
-        "torch>=2.2",
-        "pytorch-lightning==2.4.0",
+        "torch>=2.1.0",
+        "pytorch-lightning>=2.1.0",
         
         # gRPC and networking
         "grpcio>=1.54.2",
