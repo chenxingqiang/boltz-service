@@ -1,10 +1,11 @@
 # Boltz Service
 
 [![GitHub](https://img.shields.io/github/license/chenxingqiang/boltz-service)](https://github.com/chenxingqiang/boltz-service/blob/main/LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red)](https://pytorch.org/)
+[![Docker Hub](https://img.shields.io/docker/pulls/xingqiangchen/boltz-service)](https://hub.docker.com/r/xingqiangchen/boltz-service)
+[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.1%2B-red)](https://pytorch.org/)
 
-A high-performance protein structure prediction microservice with cloud-native deployment support.
+A high-performance protein structure prediction microservice with cloud-native deployment support. Supports both **Boltz-1** and **Boltz-2** models.
 
 ## Features
 
@@ -121,28 +122,44 @@ python -m boltz.service.main
 
 ### Docker Deployment
 
-#### Pre-built Image (Recommended)
+#### Pre-built Images (Recommended)
 
-Pull the pre-built image from Docker Hub:
+Pull pre-built images from [Docker Hub](https://hub.docker.com/r/xingqiangchen/boltz-service):
+
+| Tag | Model | Size | Description |
+|-----|-------|------|-------------|
+| `v1` / `boltz1` | Boltz-1 | ~15GB | Boltz-1 model with all dependencies |
+| `v2` / `boltz2` | Boltz-2 | ~14GB | Boltz-2 model with affinity prediction |
+| `latest` | Boltz-1 | ~15GB | Default (same as v1) |
+| `latest-slim` | None | ~7.5GB | Downloads model on first run |
 
 ```bash
-# Full image with embedded model weights (~8GB)
-docker pull xingqiangchen/boltz-service:latest
+# Boltz-1 (recommended for general use)
+docker pull xingqiangchen/boltz-service:v1
 
-# Slim image without model weights (~2GB, downloads on first run)
+# Boltz-2 (with affinity prediction)
+docker pull xingqiangchen/boltz-service:v2
+
+# Slim version (downloads model on first run)
 docker pull xingqiangchen/boltz-service:latest-slim
 ```
 
-Run the inference service:
+#### Run the Service
 
 ```bash
-# Full image - model included
+# Run Boltz-1 model
 docker run -d --gpus all \
   -p 50051:50051 \
   --name boltz-service \
-  xingqiangchen/boltz-service:latest
+  xingqiangchen/boltz-service:v1
 
-# Slim image - mount external model directory
+# Run Boltz-2 model
+docker run -d --gpus all \
+  -p 50051:50051 \
+  --name boltz-service \
+  xingqiangchen/boltz-service:v2
+
+# Run slim version with external model
 docker run -d --gpus all \
   -p 50051:50051 \
   -v /path/to/models:/data/models \
@@ -155,11 +172,11 @@ For detailed Docker documentation, see [Docker Guide](docs/docker.md).
 #### Build from Source
 
 ```bash
-# Build inference service
-docker build -f docker/inference.Dockerfile -t boltz-inference:latest .
+# Build Boltz-1 image
+docker build -f docker/Dockerfile.boltz1 -t boltz-service:v1 .
 
-# Build slim version
-docker build -f docker/inference-slim.Dockerfile -t boltz-inference:slim .
+# Build Boltz-2 image
+docker build -f docker/Dockerfile.boltz2 -t boltz-service:v2 .
 
 #### Docker Compose
 For local development and testing, you can use Docker Compose to run all services:
