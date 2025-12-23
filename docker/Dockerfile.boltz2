@@ -1,0 +1,92 @@
+# Boltz-2 Inference Service Dockerfile
+# Includes boltz-community/boltz-2 model weights
+
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+LABEL maintainer="xingqiangchen"
+LABEL description="Boltz-2 Protein Structure Prediction Service"
+LABEL version="2.0.0"
+LABEL model="boltz-2"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-venv \
+    python3-pip \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app/src
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Model paths
+ENV BOLTZ_CACHE_DIR=/data/cache
+ENV BOLTZ_MODEL_PATH=/data/models/boltz2_conf.ckpt
+ENV BOLTZ_AFF_MODEL_PATH=/data/models/boltz2_aff.ckpt
+ENV BOLTZ_CCD_PATH=/data/models/ccd.pkl
+ENV BOLTZ_MODEL_VERSION=boltz-2
+ENV HF_ENDPOINT=https://hf-mirror.com
+
+# Service configuration
+ENV GRPC_PORT=50051
+ENV NUM_WORKERS=2
+ENV DEVICES=1
+ENV ACCELERATOR=gpu
+
+WORKDIR /app
+
+# Create directories
+RUN mkdir -p /data/cache /data/models /data/output
+
+# Download Boltz-2 model files from Chinese HuggingFace mirror
+RUN echo "Downloading Boltz-2 models from hf-mirror.com..." && \
+    wget -q --show-progress -O /data/models/boltz2_conf.ckpt \
+        "https://hf-mirror.com/boltz-community/boltz-2/resolve/main/boltz2_conf.ckpt" && \
+    wget -q --show-progress -O /data/models/boltz2_aff.ckpt \
+        "https://hf-mirror.com/boltz-community/boltz-2/resolve/main/boltz2_aff.ckpt" && \
+    wget -q --show-progress -O /data/models/mols.tar \
+        "https://hf-mirror.com/boltz-community/boltz-2/resolve/main/mols.tar" && \
+    cd /data/models && tar -xf mols.tar && rm mols.tar && \
+    wget -q --show-progress -O /data/models/ccd.pkl \
+        "https://hf-mirror.com/boltz-community/boltz-1/resolve/main/ccd.pkl" && \
+    echo "Boltz-2 models downloaded!" && \
+    ls -lh /data/models/
+
+# Create virtual environment and install dependencies
+RUN python3 -m venv /opt/venv
+
+COPY pyproject.toml setup.py requirements.txt ./
+
+RUN pip install --no-cache-dir \
+    torch==2.1.0 \
+    torchvision==0.16.0 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+RUN pip install --no-cache-dir \
+    grpcio>=1.54.2 \
+    grpcio-tools>=1.54.2 \
+    grpcio-health-checking>=1.54.2 \
+    grpcio-reflection>=1.54.2 \
+    protobuf>=4.23.2
+
+COPY README.md ./
+COPY src/ ./src/
+RUN pip install --no-cache-dir -e .
+
+# Verify models
+RUN python3 -c "import os; assert os.path.exists('/data/models/boltz2_conf.ckpt'), 'Conf model not found'; assert os.path.exists('/data/models/boltz2_aff.ckpt'), 'Aff model not found'; print('Boltz-2 models verified!')"
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python3 -c "import grpc; channel = grpc.insecure_channel('localhost:50051'); grpc.channel_ready_future(channel).result(timeout=5)" || exit 1
+
+EXPOSE 50051
+
+CMD ["python3", "-m", "boltz_service.main", "--mode", "inference"]
