@@ -53,14 +53,4 @@ RUN cd /app/models && \
 
     
 # 启动推理服务
-CMD ["python3", "-m", "src.boltz_service.services.inference", "--port", "50051", \
-     "--cache", "${CACHE_PATH}", \
-     "--model_path", "${MODEL_PATH}", \
-     "--output_path", "${OUTPUT_PATH}", \
-     "--devices", "${DEFAULT_DEVICES}", \
-     "--accelerator", "${DEFAULT_ACCELERATOR}", \
-     "--recycling_steps", "${DEFAULT_RECYCLING_STEPS}", \
-     "--sampling_steps", "${DEFAULT_SAMPLING_STEPS}", \
-     "--diffusion_samples", "${DEFAULT_DIFFUSION_SAMPLES}", \
-     "--output_format", "${DEFAULT_OUTPUT_FORMAT}", \
-     "--num_workers", "${DEFAULT_NUM_WORKERS}"]
+CMD ["python3", "-m", "boltz_service.main", "serve", "--host", "0.0.0.0", "--port", "50051"]

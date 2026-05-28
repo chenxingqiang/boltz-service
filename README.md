@@ -35,7 +35,7 @@ export BOLTZ_UNIREF_PATH=/path/to/uniref
 
 2. Start the service:
 ```bash
-python -m boltz.main serve \
+python -m boltz_service.main serve \
     --host 0.0.0.0 \
     --port 50051 \
     --workers 10 \

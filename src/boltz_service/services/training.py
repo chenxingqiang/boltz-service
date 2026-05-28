@@ -1,5 +1,6 @@
 """Boltz training service implementation."""
 
+import argparse
 import logging
 import os
 from concurrent import futures
@@ -390,7 +391,7 @@ class TrainingService(training_service_pb2_grpc.TrainingServiceServicer):
                 job.error_message = str(e)
 
 
-def serve(port: int, config: ServiceConfig):
+def serve(port: int = 50052, config: Optional[ServiceConfig] = None):
     """Start the training service.
 
     Parameters
@@ -400,6 +401,14 @@ def serve(port: int, config: ServiceConfig):
     config : ServiceConfig
         Service configuration
     """
+    if config is None:
+        config = ServiceConfig(
+            cache_dir=Path(os.getenv("BOLTZ_CACHE_DIR", "/data/cache")),
+            data_path=Path(os.getenv("DATA_PATH", "/app/data")),
+            checkpoint_path=Path(os.getenv("CHECKPOINT_PATH", "/app/checkpoints")),
+            model_path=Path(os.getenv("MODEL_PATH", "/app/models")),
+        )
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     training_service_pb2_grpc.add_TrainingServiceServicer_to_server(
         TrainingService(config=config), server
@@ -407,3 +416,10 @@ def serve(port: int, config: ServiceConfig):
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     server.wait_for_termination()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Boltz Training gRPC service")
+    parser.add_argument("--port", type=int, default=50052, help="gRPC listen port")
+    args = parser.parse_args()
+    serve(port=args.port)

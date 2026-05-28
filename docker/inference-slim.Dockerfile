@@ -96,4 +96,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 EXPOSE 50051
 
 # Start inference service directly (no need to download models)
-CMD ["python3", "-m", "boltz_service.main", "--mode", "inference"]
+CMD ["python3", "-m", "boltz_service.main", "serve", "--host", "0.0.0.0", "--port", "50051"]

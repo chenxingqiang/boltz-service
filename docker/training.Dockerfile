@@ -61,4 +61,4 @@ RUN cd /app/models && \
     wget https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl
 
 # 启动训练服务
-CMD ["python3", "-m", "src.boltz_service.services.training", "--port", "50052"]
+CMD ["python3", "-m", "boltz_service.services.training", "--port", "50052"]

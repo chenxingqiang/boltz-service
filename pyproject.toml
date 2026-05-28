@@ -53,7 +53,7 @@ dependencies = [
 ]
 
 [project.scripts]
-boltz-service = "boltz.main:cli"
+boltz-service = "boltz_service.main:main"
 
 [project.optional-dependencies]
 lint = ["ruff"]

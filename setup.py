@@ -81,11 +81,11 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "boltz-service=boltz.main:cli",
+            "boltz-service=boltz_service.main:main",
         ],
     },
     include_package_data=True,
     package_data={
-        "boltz": ["py.typed"],
+        "boltz_service": ["py.typed"],
     },
 )

@@ -14,6 +14,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from boltz_service.config.base import BaseConfig
+from boltz_service.data.types import ServiceConfig
 from boltz_service.protos import (
     inference_service_pb2_grpc,
     msa_service_pb2_grpc,
@@ -79,26 +80,45 @@ class BoltzServer:
     def _add_services(self):
         """Add all services to the server."""
         try:
+            service_config = self._service_config_from_base()
+
             # Inference service
-            inference_service = InferenceService(self.config)
+            inference_service = InferenceService(service_config)
             inference_service_pb2_grpc.add_InferenceServiceServicer_to_server(
                 inference_service, self.server
             )
             
             # MSA service
-            msa_service = MSAService(self.config)
+            msa_service = MSAService(service_config)
             msa_service_pb2_grpc.add_MSAServiceServicer_to_server(
                 msa_service, self.server
             )
             
             # Training service
-            training_service = TrainingService(self.config)
+            training_service = TrainingService(service_config)
             training_service_pb2_grpc.add_TrainingServiceServicer_to_server(
                 training_service, self.server
             )
             
         except Exception as e:
             raise ServiceError("Failed to initialize services", str(e))
+
+    def _service_config_from_base(self) -> ServiceConfig:
+        """Convert BaseConfig to ServiceConfig expected by service implementations."""
+        cache_dir = Path(self.config.cache.cache_dir)
+        model_path_env = os.getenv("MODEL_PATH") or os.getenv("BOLTZ_MODEL_PATH")
+
+        return ServiceConfig(
+            cache_dir=cache_dir,
+            data_path=Path(os.getenv("DATA_PATH", str(cache_dir / "data"))),
+            checkpoint_path=Path(
+                os.getenv("CHECKPOINT_PATH", str(cache_dir / "checkpoints"))
+            ),
+            model_path=Path(model_path_env) if model_path_env else cache_dir / "models",
+            devices=max(1, len(self.config.accelerator.device_ids)),
+            accelerator=self.config.accelerator.type,
+            num_workers=self.config.network.max_workers,
+        )
             
     def start(self):
         """Start the server."""

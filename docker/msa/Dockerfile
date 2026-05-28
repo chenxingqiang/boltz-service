@@ -73,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 50053
 
 # Start MSA service
-CMD ["python", "-m", "src.boltz_service.services.msa", "--port", "50053"]
+CMD ["python", "-m", "boltz_service.services.msa", "--port", "50053"]

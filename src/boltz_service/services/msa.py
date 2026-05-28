@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 import os
@@ -212,6 +213,11 @@ class MSAService(msa_pb2_grpc.MSAServiceServicer):
 
 def serve(port: int = 50053, config: ServiceConfig = None):
     """Start service"""
+    if config is None:
+        config = ServiceConfig(
+            cache_dir=Path(os.getenv("BOLTZ_CACHE_DIR", "/data/cache")),
+        )
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     msa_pb2_grpc.add_MSAServiceServicer_to_server(
         MSAService(config=config),
@@ -223,4 +229,7 @@ def serve(port: int = 50053, config: ServiceConfig = None):
     server.wait_for_termination()
 
 if __name__ == "__main__":
-    serve()
+    parser = argparse.ArgumentParser(description="Boltz MSA gRPC service")
+    parser.add_argument("--port", type=int, default=50053, help="gRPC listen port")
+    args = parser.parse_args()
+    serve(port=args.port)

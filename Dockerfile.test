@@ -2,12 +2,11 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY src/boltz /app/boltz
+COPY src/boltz_service /app/boltz_service
 COPY requirements.txt /app/
 
 RUN pip install -r requirements.txt
 
-EXPOSE 8000
-EXPOSE 9090
+EXPOSE 50051
 
-CMD ["python", "-m", "boltz.main"]
+CMD ["python", "-m", "boltz_service.main", "serve", "--host", "0.0.0.0", "--port", "50051"]
