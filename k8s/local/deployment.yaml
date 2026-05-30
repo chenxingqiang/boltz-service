@@ -38,11 +38,11 @@ spec:
             name: boltz-config
         resources:
           requests:
-            cpu: 250m
-            memory: 512Mi
+            cpu: "1"
+            memory: 4Gi
           limits:
-            cpu: "2"
-            memory: 1400Mi
+            cpu: "6"
+            memory: 14Gi
         volumeMounts:
         - name: cache-volume
           mountPath: /data/cache
