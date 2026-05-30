@@ -1,5 +1,11 @@
 """Boltz model package."""
 
-from boltz_service.model.model import BoltzModel
-
 __all__ = ["BoltzModel"]
+
+
+def __getattr__(name: str):
+    if name == "BoltzModel":
+        from boltz_service.model.model import BoltzModel
+
+        return BoltzModel
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
