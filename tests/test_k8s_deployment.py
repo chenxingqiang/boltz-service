@@ -140,6 +140,9 @@ class TestBoltzK8sDeployment:
         """
         Comprehensive test to verify Kubernetes cluster connectivity
         """
+        if not self.k8s_available:
+            pytest.skip("Kubernetes cluster not available for testing")
+
         try:
             # List namespaces as a connectivity check
             namespaces = self.core_v1_api.list_namespace()

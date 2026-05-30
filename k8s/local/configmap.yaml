@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: boltz-config
+  namespace: boltz
+data:
+  BOLTZ_CACHE_DIR: "/data/cache"
+  SKIP_BFD_CHECK: "true"
+  GRPC_VERBOSITY: "ERROR"

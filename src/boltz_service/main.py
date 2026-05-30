@@ -70,10 +70,28 @@ class BoltzServer:
         health_pb2_grpc.add_HealthServicer_to_server(health_servicer, self.server)
         
         # Enable reflection
+        from boltz_service.protos import (
+            inference_service_pb2,
+            msa_service_pb2,
+            training_service_pb2,
+        )
+
+        registered_services = (
+            inference_service_pb2.DESCRIPTOR.services_by_name[
+                "InferenceService"
+            ].full_name,
+            msa_service_pb2.DESCRIPTOR.services_by_name["MSAService"].full_name,
+            training_service_pb2.DESCRIPTOR.services_by_name[
+                "TrainingService"
+            ].full_name,
+        )
+        if hasattr(self.server, "get_service_names"):
+            registered_services = tuple(self.server.get_service_names())
+
         service_names = (
             reflection.SERVICE_NAME,
             health.SERVICE_NAME,
-            *self.server.get_service_names()
+            *registered_services,
         )
         reflection.enable_server_reflection(service_names, self.server)
         

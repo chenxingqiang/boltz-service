@@ -57,6 +57,17 @@ boltz-service = "boltz_service.main:main"
 
 [project.optional-dependencies]
 lint = ["ruff"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "mypy>=1.0",
+    "flake8>=3.9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.ruff]
 src = ["src"]

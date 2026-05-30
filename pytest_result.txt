@@ -1,0 +1,2 @@
+Pytest: 1 passed
+[full output: ~/Library/Application Support/rtk/tee/1780057274_pytest.log]
