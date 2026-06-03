@@ -9,12 +9,38 @@ import time
 from pathlib import Path
 from unittest import mock
 
-import grpc
 import pytest
-import torch
-import torch.nn as nn
-import pytorch_lightning as pl
-from grpc_health.v1 import health_pb2, health_pb2_grpc
+
+try:
+    import grpc
+    import torch
+    import torch.nn as nn
+    import pytorch_lightning as pl
+    from grpc_health.v1 import health_pb2, health_pb2_grpc
+
+    _HEAVY_DEPS_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised only without optional deps
+    _HEAVY_DEPS_AVAILABLE = False
+
+    grpc = None  # type: ignore[assignment]
+    torch = None  # type: ignore[assignment]
+    health_pb2 = None  # type: ignore[assignment]
+    health_pb2_grpc = None  # type: ignore[assignment]
+
+    class _MissingDep:
+        """Placeholder base class used when heavy deps are unavailable."""
+
+    class nn:  # type: ignore[no-redef]
+        Module = _MissingDep
+
+    class pl:  # type: ignore[no-redef]
+        LightningModule = _MissingDep
+
+
+# Integration tests in ``test_server.py`` require the heavy optional
+# dependencies (torch, grpc, ...). Skip collecting them when those are not
+# installed so the lightweight unit tests can still run.
+collect_ignore = [] if _HEAVY_DEPS_AVAILABLE else ["test_server.py"]
 
 os.environ.setdefault("no_proxy", "127.0.0.1,0.0.0.0,localhost")
 os.environ.setdefault("NO_PROXY", "127.0.0.1,0.0.0.0,localhost")
