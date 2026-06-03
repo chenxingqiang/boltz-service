@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from boltz_service.config.base import BaseConfig
 
 
@@ -23,7 +25,7 @@ def test_defaults() -> None:
     assert config.accelerator.device_ids == [0]
 
 
-def test_from_env_overrides_nested_values(monkeypatch) -> None:
+def test_from_env_overrides_nested_values(monkeypatch: pytest.MonkeyPatch) -> None:
     """Single-token leaf attributes are overridden from BOLTZ_* env vars."""
     monkeypatch.setenv("BOLTZ_NETWORK_PORT", "60000")
     monkeypatch.setenv("BOLTZ_NETWORK_HOST", "127.0.0.1")
@@ -36,7 +38,7 @@ def test_from_env_overrides_nested_values(monkeypatch) -> None:
     assert config.environment == "production"
 
 
-def test_from_env_ignores_invalid_int(monkeypatch) -> None:
+def test_from_env_ignores_invalid_int(monkeypatch: pytest.MonkeyPatch) -> None:
     """Invalid integer env values fall back to the default."""
     monkeypatch.setenv("BOLTZ_NETWORK_PORT", "not-a-number")
 
@@ -46,7 +48,7 @@ def test_from_env_ignores_invalid_int(monkeypatch) -> None:
     assert config.network.port == 50051
 
 
-def test_from_env_ignores_unknown_keys(monkeypatch) -> None:
+def test_from_env_ignores_unknown_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     """Unknown BOLTZ_* env keys are ignored without error."""
     monkeypatch.setenv("BOLTZ_DOES_NOT_EXIST", "value")
 
