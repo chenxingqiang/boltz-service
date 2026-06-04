@@ -169,4 +169,6 @@ work/*
 
 # Generated local artifacts
 boltz_output/
+boltz_results_ligand/
+pytest_result.txt
 repomix-output.txt
